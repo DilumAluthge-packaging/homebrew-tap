@@ -13,11 +13,12 @@ class Platypus < Formula
   desc "Create macOS applications from {Perl,Ruby,sh,Python} scripts"
   homepage "https://sveinbjorn.org/platypus"
   # GitHub repo: https://github.com/sveinbjornt/Platypus
-  url "https://github.com/sveinbjornt/Platypus/archive/refs/tags/v5.5.0.tar.gz"
-  # version is automatically extracted from the url
-  sha256 "4a12806aef43d13f67a6d55c765da6209b42543b421fadacaf3a2462c3e6221c"
+  url "https://github.com/sveinbjornt/Platypus.git",
+      revision: "fda6025c28e4f6027be5ae757a144fedb629a537"
+  version "5.6.0-dev.fda6025c28"
+  sha256 "d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed"
   license "BSD-3-Clause"
-  revision 6
+  # revision 0
 
   bottle do
     root_url "https://github.com/DilumAluthge-packaging/homebrew-tap/releases/download/platypus-5.5.0_6"
