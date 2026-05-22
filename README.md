@@ -19,7 +19,7 @@ Notes:
 2. A formula for Platypus previously existed upstream, but it [was removed on October 29, 2024](https://github.com/Homebrew/homebrew-core/commit/d72fd20fcf630707a97b23316c2789d1b46fecb2).
 3. A deprecated cask for Platypus [exists upstream](https://formulae.brew.sh/cask/platypus). It is scheduled to be disabled on September 1, 2026.
 4. As far as I can tell, a formula for `shyaml-rs` has never existed upstream.
-5. A deprecated formula for the old `shyaml` (the Python-based one) [exists upstream](https://formulae.brew.sh/formula/shyaml). It was deprecated on October 26, 2025.
+5. A deprecated formula for the old `shyaml` (the Python-based one) [exists upstream](https://formulae.brew.sh/formula/shyaml). It was deprecated on October 26, 2025. It is scheduled to be disabled on October 26, 2026.
 
 ## Documentation
 
