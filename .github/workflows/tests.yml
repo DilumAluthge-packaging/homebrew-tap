@@ -1,5 +1,7 @@
 name: brew test-bot
 
+# Hello world
+
 on:
   push:
     branches:
