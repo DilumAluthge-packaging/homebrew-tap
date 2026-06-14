@@ -2,7 +2,7 @@ class ShyamlRs < Formula
   desc "Command-line tool for working with YAML files"
   homepage "https://github.com/0k/shyaml-rs"
   # Crate: https://crates.io/crates/shyaml-rs
-  url "https://crates.io/api/v1/crates/shyaml-rs/0.3.2/download"
+  url "https://static.crates.io/crates/shyaml-rs/shyaml-rs-0.3.2.crate"
   # version is automatically extracted from the url
   sha256 "46dbc216a9b92b5d82412ffa9114109f4500c8c02e4330588800d0edba264686"
   license "MIT"
