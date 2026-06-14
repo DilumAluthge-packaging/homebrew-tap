@@ -5,7 +5,7 @@ Add the tap with:
 ```shell
 brew tap dilumaluthge/tap
 
-# Homebrew now requires user to manually trust each third-party tap:
+# Homebrew now requires users to manually trust each third-party tap:
 brew trust dilumaluthge/tap
 ```
 
