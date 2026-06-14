@@ -8,6 +8,14 @@ class ShyamlRs < Formula
   license "MIT"
   revision 2
 
+  bottle do
+    root_url "https://github.com/DilumAluthge/homebrew-tap/releases/download/shyaml-rs-0.3.2_2"
+    sha256 cellar: :any_skip_relocation, arm64_tahoe:   "1e56bba7015b0815ad28765bea429a9c64add4701589268b4d49e3404718880e"
+    sha256 cellar: :any_skip_relocation, arm64_sequoia: "c4c22b16098204deae736e2debf6b3b90cf168f923bcd78bc41f9dcc8b9ecc8c"
+    sha256 cellar: :any_skip_relocation, arm64_sonoma:  "d29f3270cbf64227a71ae9f30f11efe2f3c6bf44d8289d7668c54fbe9310bbdd"
+    sha256 cellar: :any,                 x86_64_linux:  "496ab9e9f8dd7ed42d69c9fe075b0860bb8c23f1658f93fff4a2ac14c609da9c"
+  end
+
   depends_on "rust" => :build
   depends_on "openssl@3"
 
