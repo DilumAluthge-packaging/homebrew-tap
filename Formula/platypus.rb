@@ -17,15 +17,7 @@ class Platypus < Formula
   # version is automatically extracted from the url
   sha256 "4a12806aef43d13f67a6d55c765da6209b42543b421fadacaf3a2462c3e6221c"
   license "BSD-3-Clause"
-  revision 2
-
-  bottle do
-    root_url "https://github.com/DilumAluthge/homebrew-tap/releases/download/platypus-5.5.0_2"
-    rebuild 2
-    sha256 arm64_tahoe:   "830ac9c101915819399f78bfd2901133f23e55e4bc4ed51d52edae19ac88e943"
-    sha256 arm64_sequoia: "88ba2baafebfe31a11afcdd5933d2a8eeab7e12ad77100190af25751aa249f7e"
-    sha256 arm64_sonoma:  "5d2431cbac75981b43bc67853796023fe9b7719fd52184291de5c5badcef8171"
-  end
+  revision 3
 
   depends_on "base64" => :build
   depends_on "make" => :build
