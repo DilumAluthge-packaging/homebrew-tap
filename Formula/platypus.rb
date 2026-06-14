@@ -12,6 +12,7 @@
 class Platypus < Formula
   desc "Create macOS applications from {Perl,Ruby,sh,Python} scripts"
   homepage "https://sveinbjorn.org/platypus"
+  # GitHub repo: https://github.com/sveinbjornt/Platypus
   url "https://github.com/sveinbjornt/Platypus/archive/refs/tags/v5.5.0.tar.gz"
   # version is automatically extracted from the url
   sha256 "4a12806aef43d13f67a6d55c765da6209b42543b421fadacaf3a2462c3e6221c"
