@@ -14,6 +14,14 @@ class Pijul < Formula
   license "GPL-2.0"
   revision 1
 
+  bottle do
+    root_url "https://github.com/DilumAluthge/homebrew-tap/releases/download/pijul-1.0.0-beta.12_1"
+    sha256 cellar: :any, arm64_tahoe:   "70d58109115a4721c226f24227735e78c738f498d86aae1149661f02b2f5c349"
+    sha256 cellar: :any, arm64_sequoia: "509736d3d02721d2e421a9de7ce3873c3d049f54575a346837705c65faf169f4"
+    sha256 cellar: :any, arm64_sonoma:  "e280891b1cdf71af0a7f7fd0b4fd54b50fe9ea77328c932d7b3a396068d11e95"
+    sha256 cellar: :any, x86_64_linux:  "16a21b818c8676cae8302a8c50ed5eadf44094acdd363a4a6603871e7db4e0fa"
+  end
+
   depends_on "pkg-config" => :build
   depends_on "rust" => :build
   depends_on "libsodium"
