@@ -9,7 +9,7 @@ class Pijul < Formula
   homepage "https://pijul.org"
   # Crate: https://crates.io/crates/pijul
   url "https://static.crates.io/crates/pijul/pijul-1.0.0-beta.11.crate"
-  version "1.0.0-beta.11"
+  # version is automatically extracted from the url
   sha256 "8a4fc27aa81ee061310d57fce2df9cc45f3149ddb00bdfab2b816beb0359b13d"
   license "GPL-2.0"
   revision 3
