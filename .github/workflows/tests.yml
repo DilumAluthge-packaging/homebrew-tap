@@ -27,7 +27,7 @@ jobs:
       - name: Set up Homebrew
         id: set-up-homebrew
         # This repo does not make tags or releases
-        uses: Homebrew/actions/setup-homebrew@d4a9d3894e99dfb50a41c089a3dfcbd6009152a1 # main
+        uses: Homebrew/actions/setup-homebrew@c7f77f7dca7d714f9a72fde4e7b6a4e9cbf99062 # main
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
