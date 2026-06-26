@@ -12,15 +12,7 @@ class Pijul < Formula
   # version is automatically extracted from the url
   sha256 "d5f8e59409b31bfa76a3b45c0e076f5852a4eb6b3134497b9a902927bdd6f9bf"
   license "GPL-2.0"
-  # revision 1
-
-  bottle do
-    root_url "https://github.com/DilumAluthge/homebrew-tap/releases/download/pijul-1.0.0-beta.13"
-    sha256 cellar: :any, arm64_tahoe:   "ff9b2eb52af5df39a88735ab7f8803e2bb6f374252e7ea822dd6ad050fcfcd69"
-    sha256 cellar: :any, arm64_sequoia: "ad14afacae2370639fc495d9182b375a296885a65af4f033ab0a54cd80528bea"
-    sha256 cellar: :any, arm64_sonoma:  "cc8f32b807d1af2147d7f0ab578aa397fe29c0910a1845785a5081622d43ee43"
-    sha256 cellar: :any, x86_64_linux:  "0d59d52c5602931d626f7524ffceca4356cceebe94fc3c8c3c3ad67856c4f889"
-  end
+  revision 1
 
   depends_on "pkg-config" => :build
   depends_on "rust" => :build
@@ -34,7 +26,7 @@ class Pijul < Formula
   def install
     # Ensure that the `openssl` crate picks up the intended library.
     # https://docs.rs/openssl/0.10.75/openssl/#manual
-    ENV["OPENSSL_DIR"] = Formula["openssl@3"].opt_prefix
+    ENV["OPENSSL_DIR"] = formula_opt_prefix("openssl@3")
 
     # Build pijul, and install it into the Homebrew prefix:
     system "cargo", "install", "--locked", "--root", prefix, "--path", "."
