@@ -6,8 +6,9 @@
 
 class Pijul < Formula
   desc "Patch-based distributed version control system"
-  homepage "https://pijul.org"
+  # Web page: https://pijul.org
   # Crate: https://crates.io/crates/pijul
+  homepage "https://docs.rs/crate/pijul"
   url "https://static.crates.io/crates/pijul/pijul-1.0.0-beta.13.crate"
   # version is automatically extracted from the url
   sha256 "d5f8e59409b31bfa76a3b45c0e076f5852a4eb6b3134497b9a902927bdd6f9bf"
