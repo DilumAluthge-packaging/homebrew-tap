@@ -2,7 +2,7 @@
 # https://github.com/Homebrew/homebrew-core/commit/21702ef2c02ae7a5d925de7aed6defd0beefa93d
 # This formula is based on the last version before removal
 # Credit: Homebrew contributors
-# License: BSD
+# License for the formula code in `Homebrew/homebrew-core`: BSD (that's not the license for the Pijul software itself)
 
 class Pijul < Formula
   desc "Patch-based distributed version control system"
