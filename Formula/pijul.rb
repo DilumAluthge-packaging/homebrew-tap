@@ -29,7 +29,9 @@ class Pijul < Formula
   depends_on "openssl@3"
 
   on_linux do
+    depends_on "openssh" => :test
     depends_on "dbus"
+    depends_on "zlib"
   end
 
   def install
@@ -42,18 +44,34 @@ class Pijul < Formula
   end
 
   test do
-    system bin/"pijul", "--no-prompt", "init"
+    system bin/"pijul", "init"
     %w[haunted house].each { |f| touch testpath/f }
     assert_equal "No tracked files\n", shell_output("#{bin}/pijul ls")
-    system bin/"pijul", "--no-prompt", "add", "haunted", "house"
+    system bin/"pijul", "add", "haunted", "house"
     assert_equal "haunted\nhouse\n", shell_output("#{bin}/pijul ls")
-    system bin/"pijul", "identity", "new",
-           "--no-link", "--no-prompt",
-           "--display-name", "Test User",
-           "--email", "noreply@example.com"
-    system bin/"pijul", "--no-prompt", "record", "--all",
-           "--message='Initial patch'",
-           "--author='Test User <noreply@example.com>'"
-    assert_equal "haunted\nhouse\n", shell_output("#{bin}/pijul ls")
+
+    begin
+      # Need to set up an SSH keypair and SSH agent for testing, because `pijul identity new` requires it
+      ssh_dir = testpath/".ssh"
+      mkdir ssh_dir
+      chmod 0700, ssh_dir
+      key = ssh_dir/"pijul-test-key"
+      system "ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-f", key
+      shell_output("ssh-agent -s").scan(/^(SSH_AUTH_SOCK|SSH_AGENT_PID)=([^;]+);/).each do |name, value|
+        ENV[name] = value
+      end
+      system "ssh-add", key
+
+      system bin/"pijul", "identity", "new",
+             "--no-link",
+             "--display-name", "Test User",
+             "--email", "noreply@example.com"
+      system bin/"pijul", "record", "--all",
+             "--message='Initial patch'",
+             "--author='Test User <noreply@example.com>'"
+      assert_equal "haunted\nhouse\n", shell_output("#{bin}/pijul ls")
+    ensure
+      system "ssh-agent", "-k" if ENV["SSH_AGENT_PID"]
+    end
   end
 end
