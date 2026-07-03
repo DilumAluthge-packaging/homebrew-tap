@@ -13,16 +13,7 @@ class Pijul < Formula
   # version is automatically extracted from the url
   sha256 "186ffba86b172f450ea9771779e611446faf46ef3e06daf2a95402af3cea284d"
   license "GPL-2.0"
-  # revision 0
-
-  bottle do
-    root_url "https://github.com/DilumAluthge-packaging/homebrew-tap/releases/download/pijul-1.0.0-beta.14"
-    rebuild 1
-    sha256 cellar: :any, arm64_tahoe:   "b1bc9d394281567dbda2d232d1c451caec107cadf03f1903f3a6a8cb29effb33"
-    sha256 cellar: :any, arm64_sequoia: "3ba531ea2640534f3131bdcb29d4be7a656c96f883db63dda7d5215b407fca8a"
-    sha256 cellar: :any, arm64_sonoma:  "9255707b08887b0cffc99e69f9d01a55f5fbc720da5ee5c6a87429a3398d45b8"
-    sha256 cellar: :any, x86_64_linux:  "252fab3a7a0c67782b9b6027642a95c8aea9bfaa1b86dfb36663605b6d968a82"
-  end
+  revision 1
 
   depends_on "pkg-config" => :build
   depends_on "rust" => :build
