@@ -2,18 +2,12 @@ class ShyamlRs < Formula
   desc "Command-line tool for working with YAML files"
   homepage "https://github.com/0k/shyaml-rs"
   # Crate: https://crates.io/crates/shyaml-rs
-  url "https://static.crates.io/crates/shyaml-rs/shyaml-rs-0.3.3.crate"
-  # version is automatically extracted from the url
-  sha256 "bfc4e887290afb007b52533e0634c35dd239a430e52924f94158eea90f522633"
+  url "https://static.crates.io/crates/shyaml-rs/shyaml-rs-0.3.2.crate"
+  sha256 "46dbc216a9b92b5d82412ffa9114109f4500c8c02e4330588800d0edba264686"
   license "MIT"
-  revision 1
-
-  bottle do
-    root_url "https://github.com/DilumAluthge-packaging/homebrew-tap/releases/download/shyaml-rs-0.3.3_1"
-    sha256 cellar: :any_skip_relocation, arm64_tahoe:   "bd6c6cb0435ae1451898aaacdea5fd085d1a6914a6fbb172c41702bdb86b80d4"
-    sha256 cellar: :any_skip_relocation, arm64_sequoia: "c7e55bd0fe2e014f78f0dc6f12acd756a462e4f3223152b4abf4aa54402c9e1b"
-    sha256 cellar: :any_skip_relocation, arm64_sonoma:  "4f18ef1505ead359a2b9ad6af1f7a291372f8153a2671061d9023dca23c227c8"
-  end
+  revision 2
+  version_scheme 1
+  # version number is automatically extracted from the url
 
   depends_on "rust" => :build
   depends_on "openssl@3"
