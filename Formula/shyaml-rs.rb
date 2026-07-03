@@ -8,6 +8,13 @@ class ShyamlRs < Formula
   license "MIT"
   revision 2
 
+  bottle do
+    root_url "https://github.com/DilumAluthge-packaging/homebrew-tap/releases/download/shyaml-rs-0.3.3_2"
+    sha256 cellar: :any_skip_relocation, arm64_tahoe:   "277baaf0678d0e55b95fd51699049bdd8c4ca9072706901cdbd554bd2deb89a0"
+    sha256 cellar: :any_skip_relocation, arm64_sequoia: "0a3ee8ad146dc20da1917f7b89b686b62875390b0d344364617e1be229be3f2b"
+    sha256 cellar: :any_skip_relocation, arm64_sonoma:  "9840ef510d67542ac88c9ce5da09f1e600184cdec68b58464fa85dd0092892dc"
+  end
+
   depends_on "rust" => :build
 
   # For now, mark this formula as macOS-only
