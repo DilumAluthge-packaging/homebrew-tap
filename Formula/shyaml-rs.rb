@@ -14,7 +14,7 @@ class ShyamlRs < Formula
   # (because the Linux build is currently broken - 0.3.2 was fine, but 0.3.3 is broken)
   # TODO: Start building Linux bottles again, once the Linux build has been fixed upstream
   depends_on :macos
-  
+
   depends_on "openssl@3"
 
   conflicts_with "shyaml", because: "both install `shyaml` binaries"
