@@ -1,5 +1,7 @@
 # `dilumaluthge-packaging/tap` Homebrew Tap
 
+This is a custom tap for the [Homebrew](https://brew.sh/) package manager.
+
 Add the tap with:
 
 ```shell
