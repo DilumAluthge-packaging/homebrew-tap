@@ -2,6 +2,12 @@
 
 This is a custom tap for the [Homebrew](https://brew.sh/) package manager.
 
+## Motivation
+
+Usually, the software you're interested in is available in [`homebrew-core`](https://github.com/Homebrew/homebrew-core), searchable/browseable on [formulae.brew.sh](https://formulae.brew.sh/). However, some software isn't available in `homebrew-core`.
+
+## Usage
+
 Add the tap with:
 
 ```shell
