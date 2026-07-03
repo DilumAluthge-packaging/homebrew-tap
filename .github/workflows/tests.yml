@@ -65,7 +65,10 @@ jobs:
         continue-on-error: true # don't error if there are no bottles
 
       - name: Upload bottles as artifact
-        if: always() && github.event_name == 'pull_request'
+        if: always() && github.event_name == 'pull_request' && matrix.os != 'ubuntu-26.04'
+        # We build on multiple Ubuntu versions, to make sure the build succeeds
+        # But we only upload from the oldest Ubuntu version (currently `ubuntu-24.04`),
+        # so that the bottles are built using the older glibc.
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: bottles_${{ matrix.os }}
