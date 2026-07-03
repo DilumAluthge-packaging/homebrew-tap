@@ -39,7 +39,7 @@ jobs:
           restore-keys: ${{ matrix.os }}-rubygems-
 
       # Homebrew's Linux sandbox requires bwrap on PATH before brew test-bot runs brew doctor.
-      # Install it after cleanup-before, which prunes formulae from the prefix.
+      # Install it after cleanup-before, which prunes formulas from the prefix.
       # The sysctls enable the rootless user namespaces that bwrap needs to create the sandbox.
       - name: Set up Homebrew Linux sandbox
         if: runner.os == 'Linux'
@@ -57,12 +57,67 @@ jobs:
       - run: brew test-bot --only-setup
 
       - run: brew test-bot --only-tap-syntax
+
       - run: brew test-bot --only-formulae
         if: github.event_name == 'pull_request'
 
       - name: List bottles (if any)
         run: ls -- *.bottle.*
         continue-on-error: true # don't error if there are no bottles
+
+      - name: List the .txt files for any skipped or failed formulas
+        run: ls -l skipped_or_failed_formulae-*.txt
+        continue-on-error: true # don't error if there are no matching files
+
+      - name: Cat the .txt files for any skipped or failed formulas
+        run: tail -n +1 skipped_or_failed_formulae-*.txt
+        continue-on-error: true # don't error if there are no matching files
+
+      - name: Fail if brew test-bot unexpectedly skipped or failed formulas
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          files=(skipped_or_failed_formulae-*.txt)
+          if [[ ${#files[@]} -eq 0 ]]; then
+            exit 0
+          fi
+
+          tmpdir="$(mktemp -d)"
+          trap 'rm -rf "$tmpdir"' EXIT
+
+          all_reported="${tmpdir}/all-reported.txt"
+          expected="${tmpdir}/expected.txt"
+          unexpected="${tmpdir}/unexpected.txt"
+
+          awk 'NF { print $1 }' "${files[@]}" | sort -u > "$all_reported"
+
+          # These formulas are intentionally macOS-only. On Linux, brew test-bot is
+          # allowed to report them in skipped_or_failed_formulae-*.txt.
+          if [[ "${RUNNER_OS}" == "Linux" ]]; then
+            cat > "$expected" <<'EOF'
+          dilumaluthge-packaging/tap/platypus
+          dilumaluthge-packaging/tap/shyaml-rs
+          EOF
+          else
+            : > "$expected"
+          fi
+
+          sort -u -o "$expected" "$expected"
+          comm -23 "$all_reported" "$expected" > "$unexpected"
+
+          comm -12 "$all_reported" "$expected" | while read -r formula; do
+            echo "::notice::brew test-bot expected Linux skip: ${formula}"
+          done
+
+          if [[ -s "$unexpected" ]]; then
+            while read -r formula; do
+              echo "::error::brew test-bot unexpectedly skipped or failed formula: ${formula}"
+            done < "$unexpected"
+            exit 1
+          fi
 
       - name: Upload bottles as artifact
         if: always() && github.event_name == 'pull_request' && matrix.os != 'ubuntu-26.04'
