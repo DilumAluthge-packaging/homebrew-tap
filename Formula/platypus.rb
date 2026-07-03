@@ -20,7 +20,7 @@ class Platypus < Formula
   revision 3
 
   bottle do
-    root_url "https://github.com/DilumAluthge/homebrew-tap/releases/download/platypus-5.5.0_3"
+    root_url "https://github.com/DilumAluthge-packaging/homebrew-tap/releases/download/platypus-5.5.0_3"
     sha256 arm64_tahoe:   "fe72d8c105638e7974e05de177b74d913d5326c62fe343519ec592aaf7563eae"
     sha256 arm64_sequoia: "0f67a8eb2e6fa6e8daf790ed071ff24d168f527cc05eb11f4e4bfabe336e8394"
     sha256 arm64_sonoma:  "8ad92d8a24387688ef212ab451db1fa50d1e08a7ad437264e25dc21931a9d410"
@@ -59,7 +59,7 @@ class Platypus < Formula
     # Install the helper app and resources to #{pkgshare} (share directory)
     #
     # Without this, platypus is not runnable
-    # https://github.com/DilumAluthge/homebrew-tap/issues/18
+    # https://github.com/DilumAluthge-packaging/homebrew-tap/issues/18
     # https://github.com/Homebrew/homebrew-core/issues/18734
     cd "products/ScriptExec.app/Contents" do
       pkgshare.install "Resources/MainMenu.nib", "MacOS/ScriptExec"
@@ -79,7 +79,7 @@ class Platypus < Formula
     system bin/"platypus", "--version"
     system bin/"platypus", "--help"
 
-    # # Regression test for https://github.com/DilumAluthge/homebrew-tap/issues/18
+    # # Regression test for https://github.com/DilumAluthge-packaging/homebrew-tap/issues/18
     # File.open("my_platypus_test_script.bash", "w") do |f|
     #   f.write('#!/usr/bin/env bash\n')
     #   f.write('\n')

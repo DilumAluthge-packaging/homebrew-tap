@@ -40,7 +40,7 @@ jobs:
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
 
       # Trust my tap
-      - run: brew trust dilumaluthge/tap
+      - run: brew trust dilumaluthge-packaging/tap
 
       - name: Set up git
         # This repo does not make tags or releases

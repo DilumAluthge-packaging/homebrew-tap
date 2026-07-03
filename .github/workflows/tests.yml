@@ -50,7 +50,7 @@ jobs:
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
 
       # Trust my tap
-      - run: brew trust dilumaluthge/tap
+      - run: brew trust dilumaluthge-packaging/tap
 
       - run: brew test-bot --only-cleanup-before
 

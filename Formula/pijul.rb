@@ -16,7 +16,7 @@ class Pijul < Formula
   # revision 0
 
   bottle do
-    root_url "https://github.com/DilumAluthge/homebrew-tap/releases/download/pijul-1.0.0-beta.14"
+    root_url "https://github.com/DilumAluthge-packaging/homebrew-tap/releases/download/pijul-1.0.0-beta.14"
     rebuild 1
     sha256 cellar: :any, arm64_tahoe:   "b1bc9d394281567dbda2d232d1c451caec107cadf03f1903f3a6a8cb29effb33"
     sha256 cellar: :any, arm64_sequoia: "3ba531ea2640534f3131bdcb29d4be7a656c96f883db63dda7d5215b407fca8a"

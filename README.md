@@ -1,21 +1,21 @@
-# `dilumaluthge/tap` Homebrew Tap
+# `dilumaluthge-packaging/tap` Homebrew Tap
 
 Add the tap with:
 
 ```shell
-brew tap dilumaluthge/tap
+brew tap dilumaluthge-packaging/tap
 
 # Homebrew now requires users to manually trust each third-party tap:
-brew trust dilumaluthge/tap
+brew trust dilumaluthge-packaging/tap
 ```
 
 ## Available formulas
 
 | Name                                         | Formula                                  | License                                                                         | Installation Command                      | Notes   |
 | -------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------- | ------- |
-| [Pijul](https://pijul.org/)                  | [`pijul.rb`](./Formula/pijul.rb)         | [GPL-2.0](https://nest.pijul.com/pijul/pijul:main/DJ5JYH3KON2XO.BIAAA)          | `brew install dilumaluthge/tap/pijul`     | [1]     |
-| [Platypus](https://sveinbjorn.org/platypus)  | [`platypus.rb`](./Formula/platypus.rb)   | [BSD-3-Clause](https://github.com/sveinbjornt/Platypus/blob/master/LICENSE.txt) | `brew install dilumaluthge/tap/platypus`  | [2] [3] |
-| [shyaml-rs](https://github.com/0k/shyaml-rs) | [`shyaml-rs.rb`](./Formula/shyaml-rs.rb) | [MIT](https://github.com/0k/shyaml-rs/blob/main/LICENSE)                        | `brew install dilumaluthge/tap/shyaml-rs` | [4] [5] |
+| [Pijul](https://pijul.org/)                  | [`pijul.rb`](./Formula/pijul.rb)         | [GPL-2.0](https://nest.pijul.com/pijul/pijul:main/DJ5JYH3KON2XO.BIAAA)          | `brew install dilumaluthge-packaging/tap/pijul`     | [1]     |
+| [Platypus](https://sveinbjorn.org/platypus)  | [`platypus.rb`](./Formula/platypus.rb)   | [BSD-3-Clause](https://github.com/sveinbjornt/Platypus/blob/master/LICENSE.txt) | `brew install dilumaluthge-packaging/tap/platypus`  | [2] [3] |
+| [shyaml-rs](https://github.com/0k/shyaml-rs) | [`shyaml-rs.rb`](./Formula/shyaml-rs.rb) | [MIT](https://github.com/0k/shyaml-rs/blob/main/LICENSE)                        | `brew install dilumaluthge-packaging/tap/shyaml-rs` | [4] [5] |
 
 Notes:
 1. A formula for Pijul previously existed upstream, but it [was removed on May 13, 2020](https://github.com/Homebrew/homebrew-core/commit/21702ef2c02ae7a5d925de7aed6defd0beefa93d).
