@@ -50,7 +50,8 @@ class Pijul < Formula
       # 2. `pijul record` depends on having an identity already exist
       # 3. In order to create an identity, we have to run `pijul identity new`
       # 4. `pijul identity new` depends on an SSH keypair and SSH agent being available
-      # Therefore, in order to test `pijul record`, we need to have an SSH keypair and SSH agent available during inside the sandbox.
+      # Therefore, in order to test `pijul record`, we need to have an SSH keypair and SSH agent available
+      # during inside the sandbox.
       ssh_dir = testpath/".ssh"
       mkdir ssh_dir
       chmod 0700, ssh_dir
