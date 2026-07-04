@@ -2,11 +2,11 @@ class ShyamlRs < Formula
   desc "Command-line tool for working with YAML files"
   homepage "https://github.com/0k/shyaml-rs"
   # Crate: https://crates.io/crates/shyaml-rs
-  url "https://static.crates.io/crates/shyaml-rs/shyaml-rs-0.3.3.crate"
+  url "https://static.crates.io/crates/shyaml-rs/shyaml-rs-0.3.4.crate"
   # version is automatically extracted from the url
-  sha256 "bfc4e887290afb007b52533e0634c35dd239a430e52924f94158eea90f522633"
+  sha256 "debc2be8ac7da2cc6cf749ad1231ea151476b635ef55e93eafea3acbb2892dc8"
   license "MIT"
-  revision 2
+  # revision 0
 
   bottle do
     root_url "https://github.com/DilumAluthge-packaging/homebrew-tap/releases/download/shyaml-rs-0.3.3_2"
