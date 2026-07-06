@@ -6,7 +6,7 @@ class ShyamlRs < Formula
   # version is automatically extracted from the url
   sha256 "debc2be8ac7da2cc6cf749ad1231ea151476b635ef55e93eafea3acbb2892dc8"
   license "MIT"
-  # revision 0
+  revision 1
 
   bottle do
     root_url "https://github.com/DilumAluthge-packaging/homebrew-tap/releases/download/shyaml-rs-0.3.4"
