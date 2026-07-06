@@ -15,9 +15,6 @@ class PijulAT015 < Formula
   license "GPL-2.0-or-later"
   revision 1
 
-  # We have to mark this as keg-only, to avoid clashing with the main `pijul` formula
-  keg_only :versioned_formula
-
   bottle do
     root_url "https://github.com/DilumAluthge-packaging/homebrew-tap/releases/download/pijul@0.15-0.15.0"
     sha256 cellar: :any, arm64_tahoe:   "05fafa34d41457a71e97125fb63a3196008739acf2b6d75fb1d95f66458dded2"
@@ -25,6 +22,9 @@ class PijulAT015 < Formula
     sha256 cellar: :any, arm64_sonoma:  "1ab3a2b8518b0b5d61fa3f3caf28948b4c78e7af313b43caff2870aa9ed62847"
     sha256 cellar: :any, x86_64_linux:  "8796e9389d5e178e0ae3b74db559be57dcf5f5ed4e749abc13cb2c5ef686bf58"
   end
+
+  # We have to mark this as keg-only, to avoid clashing with the main `pijul` formula
+  keg_only :versioned_formula
 
   depends_on "pkg-config" => :build
   depends_on "rust" => :build
