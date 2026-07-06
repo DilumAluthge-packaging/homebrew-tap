@@ -16,11 +16,11 @@ class Pijul < Formula
   revision 1
 
   bottle do
-    root_url "https://github.com/DilumAluthge-packaging/homebrew-tap/releases/download/pijul-1.0.0-beta.17"
-    sha256 cellar: :any, arm64_tahoe:   "1c8f77466c9ab7119599a78320c17ef3e393f5908c1c0587e7573384b4ac6a7d"
-    sha256 cellar: :any, arm64_sequoia: "a63708a5b6a28334f6ca620d7a7d61ab4af4aeb1929efb0b139b75746a5183d5"
-    sha256 cellar: :any, arm64_sonoma:  "e1932c9cbf55ac5c9499ca4a6f20dd643af77765df56fed9ac272a52c2a229e7"
-    sha256 cellar: :any, x86_64_linux:  "aa3e832fb74b7cbdb2adb9ef9b173ab7e92dfcbdbe20a729f78d6b4759bd83bf"
+    root_url "https://github.com/DilumAluthge-packaging/homebrew-tap/releases/download/pijul-1.0.0-beta.17_1"
+    sha256 cellar: :any, arm64_tahoe:   "cbc29f739478a46760170283a5d45853764fa42af6e7b437ad9a140b4b3019f4"
+    sha256 cellar: :any, arm64_sequoia: "4f08ab5df00295198eba90b1c671c7b5eddff13fba3a59acb39760c47b5bdb8e"
+    sha256 cellar: :any, arm64_sonoma:  "9b15994a9b7f555acd69276c2536930aa19283635ed0e605e8c292730bf366e5"
+    sha256 cellar: :any, x86_64_linux:  "6a7967ec579994fcf488387ac4765872945b3fdb49f1b2727db34088fc0400fd"
   end
 
   depends_on "pkg-config" => :build
