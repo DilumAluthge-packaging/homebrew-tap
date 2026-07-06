@@ -9,10 +9,10 @@ class ShyamlRs < Formula
   revision 1
 
   bottle do
-    root_url "https://github.com/DilumAluthge-packaging/homebrew-tap/releases/download/shyaml-rs-0.3.4"
-    sha256 cellar: :any_skip_relocation, arm64_tahoe:   "cd8c622986835de22404a0326f9c1702700da8228d5d206344ce1b4a19cea253"
-    sha256 cellar: :any_skip_relocation, arm64_sequoia: "30b5b3eb69e431fe3949ad9cec883788f22d1d07f715387e9ab7d06a944fdcc9"
-    sha256 cellar: :any_skip_relocation, arm64_sonoma:  "e16c45a6ea26c318f6fd0db3afe911db2e13bb0175bdde8aa61f556aeb83d439"
+    root_url "https://github.com/DilumAluthge-packaging/homebrew-tap/releases/download/shyaml-rs-0.3.4_1"
+    sha256 cellar: :any_skip_relocation, arm64_tahoe:   "6c09c383d407123713fbfa0ca02cd8a1da1e095579ee22177be9b8c4837c3517"
+    sha256 cellar: :any_skip_relocation, arm64_sequoia: "91f0d20ece9558734df9dafa2618c2cfe50b1292135f6255b3a052e5c76b4bbc"
+    sha256 cellar: :any_skip_relocation, arm64_sonoma:  "9879a7c8b3629cf3de01b50bd35106a1047e794644d55f1633f8b0a58ae33f53"
   end
 
   depends_on "rust" => :build
