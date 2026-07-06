@@ -47,8 +47,12 @@ class PijulAT015 < Formula
   end
 
   test do
+    (testpath/"testdir-main").mkpath
+    cd testpath/"testdir-main"
     system bin/"pijul", "init"
-    %w[haunted house].each { |f| touch testpath/f }
+    %w[haunted house].each do |f|
+      touch f
+    end
     assert_equal "No tracked files\n", shell_output("#{bin}/pijul ls")
     system bin/"pijul", "add", "haunted", "house"
     assert_equal "haunted\nhouse\n", shell_output("#{bin}/pijul ls")
@@ -81,8 +85,20 @@ class PijulAT015 < Formula
              "--message='Initial patch'",
              "--author='Test User <noreply@example.com>'"
       assert_equal "haunted\nhouse\n", shell_output("#{bin}/pijul ls")
+
+      # Regression test for https://nest.pijul.com/pijul/pijul/discussion/988
+      # (#988 "Bug with pijul clone https://")
+      (testpath/"testdir-upstream-988").mkpath
+      cd testpath/"testdir-upstream-988" do
+        system bin/"pijul", "clone", "https://nest.pijul.com/pijul/pijul"
+        assert_predicate testpath/"testdir-upstream-988"/"pijul", :directory?
+        assert_predicate testpath/"testdir-upstream-988"/"pijul/Cargo.toml", :file?
+      end
     ensure
       system "ssh-agent", "-k" if ENV["SSH_AGENT_PID"]
     end
+    # ^^^ begin
   end
+  # ^^^ test
 end
+# ^^^ class
