@@ -13,7 +13,7 @@ class PijulAT015 < Formula
   # version is automatically extracted from the url
   sha256 "51d7b44e03f2c428fea010318fea041fae3a1b9a6946aa79cf8c152707959157"
   license "GPL-2.0-or-later"
-  revision 1
+  revision 2
 
   bottle do
     root_url "https://github.com/DilumAluthge-packaging/homebrew-tap/releases/download/pijul@0.15-0.15.0_1"
