@@ -4,7 +4,11 @@
 # Credit: Homebrew contributors
 # License for the formula code in `Homebrew/homebrew-core`: BSD (that's not the license for the Pijul software itself)
 
+require_relative "../Library/FormulaHelpers/pijul_test"
+
 class PijulAT015 < Formula
+  include PijulTest
+
   desc "Patch-based distributed version control system"
   # Web page: https://pijul.org
   # Crate: https://crates.io/crates/pijul
@@ -13,7 +17,7 @@ class PijulAT015 < Formula
   # version is automatically extracted from the url
   sha256 "51d7b44e03f2c428fea010318fea041fae3a1b9a6946aa79cf8c152707959157"
   license "GPL-2.0-or-later"
-  revision 2
+  revision 3
 
   bottle do
     root_url "https://github.com/DilumAluthge-packaging/homebrew-tap/releases/download/pijul@0.15-0.15.0_2"
@@ -47,58 +51,6 @@ class PijulAT015 < Formula
   end
 
   test do
-    (testpath/"testdir-main").mkpath
-    cd testpath/"testdir-main"
-    system bin/"pijul", "init"
-    %w[haunted house].each do |f|
-      touch f
-    end
-    assert_equal "No tracked files\n", shell_output("#{bin}/pijul ls")
-    system bin/"pijul", "add", "haunted", "house"
-    assert_equal "haunted\nhouse\n", shell_output("#{bin}/pijul ls")
-
-    begin
-      # Need to set up an SSH keypair and SSH agent for testing, because `pijul identity new` requires it
-      #
-      # Basically, the dependency tree looks like this:
-      # 1. We want to test that `pijul record` works
-      # 2. `pijul record` depends on having an identity already exist
-      # 3. In order to create an identity, we have to run `pijul identity new`
-      # 4. `pijul identity new` depends on an SSH keypair and SSH agent being available
-      # Therefore, in order to test `pijul record`, we need to have an SSH keypair and SSH agent available
-      # during inside the sandbox.
-      ssh_dir = testpath/".ssh"
-      mkdir ssh_dir
-      chmod 0700, ssh_dir
-      key = ssh_dir/"pijul-test-key"
-      system "ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-f", key
-      shell_output("ssh-agent -s").scan(/^(SSH_AUTH_SOCK|SSH_AGENT_PID)=([^;]+);/).each do |name, value|
-        ENV[name] = value
-      end
-      system "ssh-add", key
-
-      system bin/"pijul", "identity", "new",
-             "--no-link",
-             "--display-name", "Test User",
-             "--email", "noreply@example.com"
-      system bin/"pijul", "record", "--all",
-             "--message='Initial patch'",
-             "--author='Test User <noreply@example.com>'"
-      assert_equal "haunted\nhouse\n", shell_output("#{bin}/pijul ls")
-
-      # Regression test for https://nest.pijul.com/pijul/pijul/discussion/988
-      # (#988 "Bug with pijul clone https://")
-      (testpath/"testdir-upstream-988").mkpath
-      cd testpath/"testdir-upstream-988" do
-        system bin/"pijul", "clone", "https://nest.pijul.com/pijul/pijul"
-        assert_predicate testpath/"testdir-upstream-988"/"pijul", :directory?
-        assert_predicate testpath/"testdir-upstream-988"/"pijul/Cargo.toml", :file?
-      end
-    ensure
-      system "ssh-agent", "-k" if ENV["SSH_AGENT_PID"]
-    end
-    # ^^^ begin
+    run_pijul_tests
   end
-  # ^^^ test
 end
-# ^^^ class
