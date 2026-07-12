@@ -5,7 +5,8 @@
     ":separateMajorReleases",
     ":separateMultipleMajorReleases",
     ":separateMultipleMinorReleases",
-    ":separatePatchReleases"
+    ":separatePatchReleases",
+    ":enableVulnerabilityAlerts",
   ],
   "rebaseWhen": "conflicted"
 }
