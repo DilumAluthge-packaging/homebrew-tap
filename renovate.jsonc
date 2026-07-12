@@ -10,6 +10,20 @@
   ],
   "rebaseWhen": "conflicted",
 
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/(^|/)Formula/.*\\.rb$/"
+      ],
+      "matchStrings": [
+        "url \"https://static\\.crates\\.io/crates/(?<packageName>[^/]+)/[^/\"]+?-(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+(?:-[^\"]+)?)\\.crate\""
+      ],
+      "datasourceTemplate": "crate",
+      "versioningTemplate": "cargo"
+    }
+  ],
+
   // Note: the 7-day cooldown does not apply to security updates.
   //
   // > What happens to security updates?
