@@ -8,5 +8,12 @@
     ":separatePatchReleases",
     ":enableVulnerabilityAlerts",
   ],
-  "rebaseWhen": "conflicted"
+  "rebaseWhen": "conflicted",
+
+  // Note: the 7-day cooldown does not apply to security updates.
+  //
+  // > What happens to security updates?
+  // > Security updates bypass any minimumReleaseAge checks, and so will be raised as soon as Renovate detects them.
+  // Source: https://docs.renovatebot.com/key-concepts/minimum-release-age/#what-happens-to-security-updates
+  "minimumReleaseAge": "7 days"
 }
