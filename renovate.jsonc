@@ -25,6 +25,24 @@
     }
   ],
 
+  "packageRules": [
+    // Homebrew/actions tags its (monorepo) actions with 4-part CalVer, e.g.
+    // `2026.07.10.1`. The github-actions manager's default `docker` versioning
+    // (see https://github.com/renovatebot/renovate/issues/42331) drops the 4th
+    // component, so Renovate records the current version as `2026.07.10`, which
+    // is not a real tag. It then can't match the current version on the
+    // datasource and warns "Could not determine new digest for update
+    // (github-tags package Homebrew/actions)" -- the false-positive documented
+    // in https://github.com/renovatebot/renovate/discussions/38291 (warns
+    // whenever the current version is absent from the datasource). A regex
+    // versioning that captures all four components fixes the lookup.
+    {
+      "matchDatasources": ["github-tags"],
+      "matchPackageNames": ["Homebrew/actions"],
+      "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)\\.(?<build>\\d+)$"
+    }
+  ],
+
   // Note: the 7-day cooldown does not apply to security updates.
   //
   // > What happens to security updates?
