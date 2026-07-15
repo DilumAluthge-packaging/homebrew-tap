@@ -25,7 +25,7 @@ jobs:
 
       - name: Set up Homebrew
         # This repo does not make tags or releases
-        uses: Homebrew/actions/setup-homebrew@d74d1431a0ee36e645aa62ebebeec16da878e7e0 # main
+        uses: Homebrew/actions/setup-homebrew@100978dc923ea73ee9ed454d1d5c4fcf3ee14a9e # main
         with:
           token: ${{ steps.generate-token.outputs.token }}
 
@@ -44,7 +44,7 @@ jobs:
 
       - name: Set up git
         # This repo does not make tags or releases
-        uses: Homebrew/actions/git-user-config@d74d1431a0ee36e645aa62ebebeec16da878e7e0 # main
+        uses: Homebrew/actions/git-user-config@100978dc923ea73ee9ed454d1d5c4fcf3ee14a9e # main
 
       - name: Pull bottles
         env:
@@ -54,7 +54,7 @@ jobs:
 
       - name: Push commits
         # This repo does not make tags or releases
-        uses: Homebrew/actions/git-try-push@d74d1431a0ee36e645aa62ebebeec16da878e7e0 # main
+        uses: Homebrew/actions/git-try-push@100978dc923ea73ee9ed454d1d5c4fcf3ee14a9e # main
         with:
           branch: main
 
