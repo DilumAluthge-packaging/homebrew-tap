@@ -24,7 +24,6 @@ jobs:
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
       - name: Set up Homebrew
-        # This repo does not make tags or releases
         uses: Homebrew/actions/setup-homebrew@1f8e202ffddf94def7f42f6fa3a482e821489f9c # 2026.07.10.1
         with:
           token: ${{ steps.generate-token.outputs.token }}
@@ -43,7 +42,6 @@ jobs:
       - run: brew trust dilumaluthge-packaging/tap
 
       - name: Set up git
-        # This repo does not make tags or releases
         uses: Homebrew/actions/git-user-config@1f8e202ffddf94def7f42f6fa3a482e821489f9c # 2026.07.10.1
 
       - name: Pull bottles
@@ -53,7 +51,6 @@ jobs:
         run: brew pr-pull --debug --tap="$GITHUB_REPOSITORY" "$PULL_REQUEST"
 
       - name: Push commits
-        # This repo does not make tags or releases
         uses: Homebrew/actions/git-try-push@1f8e202ffddf94def7f42f6fa3a482e821489f9c # 2026.07.10.1
         with:
           branch: main
