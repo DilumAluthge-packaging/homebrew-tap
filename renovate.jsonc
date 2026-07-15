@@ -22,24 +22,38 @@
       ],
       "datasourceTemplate": "crate",
       "versioningTemplate": "cargo"
+    },
+    {
+      // Homebrew/actions tags its (monorepo) actions with 4-part CalVer, e.g.
+      // `2026.07.10.1`. The built-in github-actions manager truncates the
+      // `# <tag>` comment to base semver (major.minor.patch), turning
+      // `2026.07.10.1` into `2026.07.10` -- the confirmed comment-truncation bug
+      // in https://github.com/renovatebot/renovate/issues/35789. It then can't
+      // find that tag and warns "Could not determine new digest for update
+      // (github-tags package Homebrew/actions)". This custom manager captures
+      // the full 4-part tag so the github-tags lookup and digest pinning
+      // succeed; the packageRule below disables the built-in manager for this
+      // dep so it stops re-warning. (Verified via `renovate --platform=local`:
+      // resolves 2026.07.10.1 and updates to 2026.07.13.1 with no warnings.)
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/(^|/)\\.github/workflows/.*\\.ya?ml$/"
+      ],
+      "matchStrings": [
+        "uses:\\s+(?<depName>Homebrew/actions)/[\\w-]+@(?<currentDigest>[a-f0-9]{40})\\s+#\\s+(?<currentValue>\\d+\\.\\d+\\.\\d+\\.\\d+)"
+      ],
+      "datasourceTemplate": "github-tags",
+      "versioningTemplate": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)\\.(?<build>\\d+)$"
     }
   ],
 
   "packageRules": [
-    // Homebrew/actions tags its (monorepo) actions with 4-part CalVer, e.g.
-    // `2026.07.10.1`. The github-actions manager's default `docker` versioning
-    // (see https://github.com/renovatebot/renovate/issues/42331) drops the 4th
-    // component, so Renovate records the current version as `2026.07.10`, which
-    // is not a real tag. It then can't match the current version on the
-    // datasource and warns "Could not determine new digest for update
-    // (github-tags package Homebrew/actions)" -- the false-positive documented
-    // in https://github.com/renovatebot/renovate/discussions/38291 (warns
-    // whenever the current version is absent from the datasource). A regex
-    // versioning that captures all four components fixes the lookup.
     {
-      "matchDatasources": ["github-tags"],
-      "matchPackageNames": ["Homebrew/actions"],
-      "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)\\.(?<build>\\d+)$"
+      // Handled by the custom manager above; disable the built-in github-actions
+      // manager for Homebrew/actions so it doesn't re-emit the digest warning.
+      "matchManagers": ["github-actions"],
+      "matchDepNames": ["Homebrew/actions"],
+      "enabled": false
     }
   ],
 
