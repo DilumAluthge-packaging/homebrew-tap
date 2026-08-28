@@ -98,7 +98,6 @@ jobs:
           if [[ "${RUNNER_OS}" == "Linux" ]]; then
             cat > "$expected" <<'EOF'
           dilumaluthge-packaging/tap/platypus
-          dilumaluthge-packaging/tap/shyaml-rs
           EOF
           else
             : > "$expected"
