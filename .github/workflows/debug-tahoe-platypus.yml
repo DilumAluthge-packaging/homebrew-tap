@@ -1,23 +1,24 @@
 # THROWAWAY. Delete this file and the dpa/debug-tahoe-platypus branch once the
 # ibtool question is settled. See DilumAluthge-packaging/homebrew-tap#140.
 #
-# `platypus` builds fine on macos-26 (arm64) and on macos-15-intel, but on
-# macos-26-intel `ibtool` wedges: it compiled ScriptExec's MainMenu.xib and the
-# GUI's SyntaxChecker.xib, then hung on ShellCommandWindow.xib for 4+ minutes
-# until the job was killed. Same Xcode 26.6 and Clang 21.0.0 as the arm64
-# runner, so this is not a toolchain-version regression -- it needs x86_64 AND
-# Xcode 26.6 together.
+# Established so far on macos-26-intel:
+#   - ibtool hangs on Application/Resources/ShellCommandWindow.xib, even as the
+#     very first invocation, so it is not an Nth-call race.
+#   - ibtool and ibtoold are both universal (x86_64 arm64), so no missing slice.
+#   - ibtool itself is only a front-end: its stack is
+#         main -> IBRunWithPipes -> IBForwardIO -> __select
+#     i.e. blocked forwarding pipes while `ibtoold` does the real work. The
+#     previous run sampled ibtool, which only shows it waiting on the daemon.
 #
-# Three hypotheses, which this workflow is built to tell apart:
-#   H1  an ibtool helper has no x86_64 slice, so the parent waits forever
-#       -> the lipo/arch dump shows a missing x86_64
-#   H2  a nondeterministic deadlock, i.e. the Nth invocation wedges
-#       -> ShellCommandWindow.xib succeeds when compiled FIRST
-#   H3  something specific to ShellCommandWindow.xib
-#       -> it hangs even when compiled FIRST
+# So: sample ibtoold, which is where the hang actually is.
 #
-# Each ibtool call is bounded, and a hung one is sampled for a stack trace
-# before it is killed, so we learn where inside ibtool it is stuck.
+# Also tests the font hypothesis directly. ShellCommandWindow.xib declares 5
+# fonts and the build passes --auto-activate-custom-fonts; SyntaxChecker.xib
+# declares 3 and compiles fine. Running the same file with and without that
+# flag isolates whether font activation is the trigger.
+#
+# NOTE: GitHub runs `run:` steps as `bash -e`, so `wait` returning 137 after our
+# own kill -9 aborted the previous run before its later phases. Hence `set +e`.
 name: debug the Tahoe platypus build
 
 on:
@@ -30,7 +31,7 @@ permissions:
   contents: read
 
 jobs:
-  debug_ibtool:
+  debug_ibtoold:
     runs-on: macos-26-intel
     timeout-minutes: 45
     permissions:
@@ -39,34 +40,9 @@ jobs:
       - name: Check out the Platypus sources
         run: git clone --quiet --depth 1 --branch v5.5.0 https://github.com/sveinbjornt/Platypus.git platypus-src
 
-      # H1: if a helper is arm64-only, the x86_64 parent may block forever
-      # waiting on a connection it can never get.
-      - name: Architectures of ibtool and its helpers
+      - name: Probe ibtool / ibtoold
         run: |
-          set -uo pipefail
-
-          ibtool_path="$(xcrun --find ibtool)"
-          echo "ibtool: ${ibtool_path}"
-          file "${ibtool_path}" || true
-          echo "archs: $(lipo -archs "${ibtool_path}" 2>&1 || echo '?')"
-
-          dev_dir="$(xcode-select -p)"
-          xcode_app="${dev_dir%/Contents/Developer}"
-          echo
-          echo "== Interface Builder support binaries =="
-          while IFS= read -r f; do
-            [ -f "${f}" ] || continue
-            printf '%-64s %s\n' "${f#"${xcode_app}"/}" "$(lipo -archs "${f}" 2>&1 || echo '?')"
-          done < <(
-            find "${xcode_app}/Contents/SharedFrameworks" \
-                 "${xcode_app}/Contents/Frameworks" \
-                 "${dev_dir}/usr/bin" \
-                 -maxdepth 4 -type f \( -name 'ibtool*' -o -name 'IB*' -o -name '*InterfaceBuilder*' \) \
-                 2>/dev/null | head -n 40
-          )
-
-      - name: Compile each XIB with ibtool, bounded and sampled
-        run: |
+          set +e
           set -uo pipefail
 
           src="${PWD}/platypus-src"
@@ -75,71 +51,128 @@ jobs:
           mkdir -p "${out}" "${samples}"
           ibtool_path="$(xcrun --find ibtool)"
 
-          # macOS has no timeout(1). Run ibtool in the background, poll, and if
-          # it outlives the budget grab a stack trace before killing it.
-          try_xib() {
-            label="$1"; module="$2"; xib="$3"; budget="${4:-120}"
+          # Print the interesting part of a sample rather than the whole dump.
+          show_call_graph() {
+            sed -n '/^Call graph:/,/^Total number/p' "$1" 2>/dev/null \
+              | head -n 45 | sed 's/^/    /'
+          }
+
+          # Run one ibtool invocation with a time budget. If it outlives the
+          # budget, sample BOTH the ibtool shim and the ibtoold daemon, then
+          # kill everything so the next case starts clean.
+          try_ibtool() {
+            label="$1"; budget="$2"; shift 2
 
             echo "=================================================================="
-            echo "[${label}] module=${module}  $(basename "${xib}")"
+            echo "[${label}] ibtool $*"
 
-            "${ibtool_path}" --errors --warnings --notices \
-              --module "${module}" \
-              --auto-activate-custom-fonts \
-              --target-device mac \
-              --minimum-deployment-target 11.5 \
-              --output-format human-readable-text \
-              --compile "${out}/${label}.nib" "${xib}" &
+            "${ibtool_path}" "$@" &
             ib_pid=$!
 
             waited=0
             while kill -0 "${ib_pid}" 2>/dev/null && [ "${waited}" -lt "${budget}" ]; do
-              sleep 5
-              waited=$((waited + 5))
+              sleep 3
+              waited=$((waited + 3))
             done
 
             if kill -0 "${ib_pid}" 2>/dev/null; then
-              echo "[${label}] RESULT: HUNG (still alive after ${budget}s)"
-              echo "[${label}] live ibtool-ish processes:"
-              pgrep -fl 'ibtool|IBAgent|IBCocoa|InterfaceBuilder' | sed 's/^/    /' || true
-              echo "[${label}] capturing a stack sample..."
-              sample "${ib_pid}" 5 -file "${samples}/${label}.txt" >/dev/null 2>&1 \
-                || echo "    (sample failed; may need elevated privileges)"
-              echo "[${label}] --- sample head ---"
-              sed -n '1,80p' "${samples}/${label}.txt" 2>/dev/null || echo "    (no sample captured)"
+              echo "[${label}] RESULT: HUNG after ${budget}s"
+
+              ibtoold_pid="$(pgrep -n -f 'ibtoold' 2>/dev/null)"
+              echo "[${label}] ibtool pid=${ib_pid}  ibtoold pid=${ibtoold_pid:-<none>}"
+
+              if [ -n "${ibtoold_pid}" ]; then
+                echo "[${label}] ===== ibtoold stack (the daemon doing the work) ====="
+                sample "${ibtoold_pid}" 5 -file "${samples}/${label}-ibtoold.txt" >/dev/null 2>&1 \
+                  || echo "    (sample of ibtoold failed)"
+                show_call_graph "${samples}/${label}-ibtoold.txt"
+              fi
+
+              echo "[${label}] ===== ibtool stack (the shim) ====="
+              sample "${ib_pid}" 3 -file "${samples}/${label}-ibtool.txt" >/dev/null 2>&1 || true
+              show_call_graph "${samples}/${label}-ibtool.txt"
+
               kill -9 "${ib_pid}" 2>/dev/null
               wait "${ib_pid}" 2>/dev/null
             else
               wait "${ib_pid}"
               echo "[${label}] RESULT: completed rc=$? after ~${waited}s"
             fi
+
+            # Never let a wedged daemon leak into the next case.
+            pkill -9 -f ibtoold 2>/dev/null
+            sleep 2
           }
 
-          # H2 vs H3: compile the suspect FIRST, before any other ibtool call.
-          # If it succeeds here but hangs later in sequence, the file is
-          # innocent and the failure depends on invocation order.
-          echo "##### PHASE 1: the suspect, compiled first #####"
-          try_xib "phase1-ShellCommandWindow" Platypus \
-                  "${src}/Application/Resources/ShellCommandWindow.xib" 120
+          xib_shell="${src}/Application/Resources/ShellCommandWindow.xib"
+          xib_syntax="${src}/Application/Resources/SyntaxChecker.xib"
+          xib_editor="${src}/Application/Resources/Editor.xib"
+          xib_main="${src}/ScriptExec/Resources/MainMenu.xib"
+          xib_platypus="${src}/Application/Resources/Platypus.xib"
 
-          # Then the real build order, to see whether the hang tracks the file
-          # or the position in the sequence.
-          echo
-          echo "##### PHASE 2: the full set, in build order #####"
-          try_xib "phase2-1-MainMenu"          ScriptExec "${src}/ScriptExec/Resources/MainMenu.xib" 120
-          try_xib "phase2-2-SyntaxChecker"     Platypus   "${src}/Application/Resources/SyntaxChecker.xib" 120
-          try_xib "phase2-3-ShellCommandWindow" Platypus  "${src}/Application/Resources/ShellCommandWindow.xib" 120
-          try_xib "phase2-4-Editor"            Platypus   "${src}/Application/Resources/Editor.xib" 120
-          try_xib "phase2-5-Platypus"          Platypus   "${src}/Application/Resources/Platypus.xib" 180
+          echo "##### A: the failing case, exactly as the build invokes it #####"
+          try_ibtool "A-shell-withfonts" 90 \
+            --errors --warnings --notices --module Platypus \
+            --auto-activate-custom-fonts \
+            --target-device mac --minimum-deployment-target 11.5 \
+            --output-format human-readable-text \
+            --compile "${out}/A.nib" "${xib_shell}"
 
           echo
-          echo "##### SUMMARY #####"
-          ls -la "${out}" || true
+          echo "##### B: same file, WITHOUT --auto-activate-custom-fonts #####"
+          try_ibtool "B-shell-nofonts" 90 \
+            --errors --warnings --notices --module Platypus \
+            --target-device mac --minimum-deployment-target 11.5 \
+            --output-format human-readable-text \
+            --compile "${out}/B.nib" "${xib_shell}"
+
+          echo
+          echo "##### C: bare minimum arguments on the same file #####"
+          try_ibtool "C-shell-bare" 90 --compile "${out}/C.nib" "${xib_shell}"
+
+          echo
+          echo "##### D: control -- a file known to compile, same flags as A #####"
+          try_ibtool "D-syntaxchecker" 90 \
+            --errors --warnings --notices --module Platypus \
+            --auto-activate-custom-fonts \
+            --target-device mac --minimum-deployment-target 11.5 \
+            --output-format human-readable-text \
+            --compile "${out}/D.nib" "${xib_syntax}"
+
+          echo
+          echo "##### E/F: the two XIBs never yet tested on this platform #####"
+          try_ibtool "E-editor" 90 \
+            --errors --warnings --notices --module Platypus \
+            --auto-activate-custom-fonts \
+            --target-device mac --minimum-deployment-target 11.5 \
+            --output-format human-readable-text \
+            --compile "${out}/E.nib" "${xib_editor}"
+
+          try_ibtool "F-platypus" 120 \
+            --errors --warnings --notices --module Platypus \
+            --auto-activate-custom-fonts \
+            --target-device mac --minimum-deployment-target 11.5 \
+            --output-format human-readable-text \
+            --compile "${out}/F.nib" "${xib_platypus}"
+
+          echo
+          echo "##### G: control -- ScriptExec's MainMenu.xib, the one we ship #####"
+          try_ibtool "G-mainmenu" 90 \
+            --errors --warnings --notices --module ScriptExec --flatten NO \
+            --auto-activate-custom-fonts \
+            --target-device mac --minimum-deployment-target 10.13 \
+            --output-format human-readable-text \
+            --compile "${out}/G.nib" "${xib_main}"
+
+          echo
+          echo "##### SUMMARY: which nibs were produced #####"
+          ls -la "${out}" 2>/dev/null
+          exit 0
 
       - name: Upload stack samples
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: ibtool-samples
+          name: ibtoold-samples
           path: samples/
           if-no-files-found: warn
