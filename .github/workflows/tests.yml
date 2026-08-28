@@ -241,7 +241,90 @@ jobs:
 
       # --testing-formulae replaces test-bot's own formula detection, so this
       # runner builds platypus and nothing else, no matter what else the PR touched.
-      - run: brew test-bot --only-formulae --testing-formulae=dilumaluthge-packaging/tap/platypus
+      #
+      # brew test-bot captures the output of the commands it shells out to, and
+      # only surfaces it on failure. So a slow `brew install --build-bottle`
+      # produces no output at all, and is indistinguishable from a wedged one --
+      # which is exactly the ambiguity we hit on macos-26-intel. Run test-bot in
+      # the background and tick every 10s with the newest Homebrew build log and
+      # any compiler processes, so a stall shows what it is stuck on.
+      - name: Run brew test-bot --only-formulae (with a progress ticker)
+        shell: bash
+        run: |
+          set -uo pipefail
+
+          # Build tools worth reporting. The name has to be delimited by a space
+          # or a slash: a plain substring match for "ld" also hits system daemons
+          # such as triald_system, bootinstalld, corekdld and seld.
+          build_procs_re='(^|[ /])(xcodebuild|clang|clang\+\+|cc|c\+\+|gcc|ld|make|swift|swiftc|ibtool|actool)( |$)'
+
+          brew test-bot --only-formulae --testing-formulae=dilumaluthge-packaging/tap/platypus &
+          test_bot_pid=$!
+
+          ticker() {
+            local newest
+            while kill -0 "${test_bot_pid}" 2>/dev/null; do
+              sleep 10
+
+              newest="$(find "${HOME}/Library/Logs/Homebrew" -type f -print0 2>/dev/null \
+                        | xargs -0 ls -t 2>/dev/null | head -n 1)"
+
+              echo "---- [ticker +${SECONDS}s] ----------------------------------------"
+              if [[ -n "${newest}" ]]; then
+                echo "[ticker] newest build log: ${newest}"
+                tail -n 5 -- "${newest}" 2>/dev/null | sed 's/^/[ticker]   /'
+              else
+                echo "[ticker] no Homebrew build logs yet"
+              fi
+
+              # Elapsed time per process makes a genuinely stuck command obvious.
+              # pgrep resolves the pids and ps formats them, because pgrep on its
+              # own cannot report elapsed time.
+              build_pids="$(pgrep -f "${build_procs_re}" 2>/dev/null | tr '\n' ',' | sed 's/,$//')"
+              if [[ -n "${build_pids}" ]]; then
+                ps -o etime,command -p "${build_pids}" 2>/dev/null \
+                  | tail -n +2 \
+                  | head -n 8 \
+                  | sed 's/^/[ticker]   proc /'
+              fi
+            done
+          }
+
+          ticker &
+          ticker_pid=$!
+
+          wait "${test_bot_pid}"
+          status=$?
+
+          kill "${ticker_pid}" 2>/dev/null || true
+          wait "${ticker_pid}" 2>/dev/null || true
+
+          echo "brew test-bot exited with status ${status}"
+          exit "${status}"
+
+      # Homebrew writes the real compiler invocations to per-formula logs. Copy
+      # them into the workspace so they can be uploaded even when the job is
+      # cancelled or hits its timeout -- `if: always()` steps still run then.
+      - name: Collect Homebrew build logs
+        if: always()
+        shell: bash
+        run: |
+          set -uo pipefail
+          mkdir -p homebrew-logs
+          if [[ -d "${HOME}/Library/Logs/Homebrew" ]]; then
+            cp -R "${HOME}/Library/Logs/Homebrew/." homebrew-logs/ 2>/dev/null || true
+            find homebrew-logs -type f | head -n 50
+          else
+            echo "No Homebrew build logs found"
+          fi
+
+      - name: Upload Homebrew build logs as artifact
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: homebrew-logs_${{ matrix.os }}
+          path: homebrew-logs/
+          if-no-files-found: warn # don't error if there are no logs
 
       - name: List bottles (if any)
         run: ls -- *.bottle.*
