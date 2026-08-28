@@ -1,24 +1,28 @@
-# THROWAWAY. Delete this file and the dpa/debug-tahoe-platypus branch once the
-# ibtool question is settled. See DilumAluthge-packaging/homebrew-tap#140.
+# THROWAWAY. Delete this file and the dpa/debug-tahoe-platypus branch when done.
+# See DilumAluthge-packaging/homebrew-tap#140.
 #
-# Established so far on macos-26-intel:
-#   - ibtool hangs on Application/Resources/ShellCommandWindow.xib, even as the
-#     very first invocation, so it is not an Nth-call race.
-#   - ibtool and ibtoold are both universal (x86_64 arm64), so no missing slice.
-#   - ibtool itself is only a front-end: its stack is
-#         main -> IBRunWithPipes -> IBForwardIO -> __select
-#     i.e. blocked forwarding pipes while `ibtoold` does the real work. The
-#     previous run sampled ibtool, which only shows it waiting on the daemon.
+# Established on macos-26-intel: every Cocoa XIB compile runs a once-per-process
+# init of the system image catalog --
+#     IBLoadDocument -> IBDocument setPlatform: -> IBResourceManager
+#       -> +[IBCocoaResourceManager systemMediaRepository]      (dispatch_once)
+#         -> systemNSImageNamedResources -> +[NSImage imageNamed:]
+#           -> +[ISIconManager sharedInstance]                  (dispatch_once)
+#             -> synchronous NSXPC -> mach_msg2_trap            (blocks forever)
+# -- and IconServices does not reliably answer. 6 of 7 XIBs hung; the one that
+# succeeded took 33s for a file that normally takes ~1s. MainMenu.xib hung here
+# but compiled fine in an earlier run, so it is nondeterministic, not
+# file-specific. This is a runner-image defect, not a Platypus bug.
 #
-# So: sample ibtoold, which is where the hang actually is.
-#
-# Also tests the font hypothesis directly. ShellCommandWindow.xib declares 5
-# fonts and the build passes --auto-activate-custom-fonts; SyntaxChecker.xib
-# declares 3 and compiles fine. Running the same file with and without that
-# flag isolates whether font activation is the trigger.
-#
-# NOTE: GitHub runs `run:` steps as `bash -e`, so `wait` returning 137 after our
-# own kill -9 aborted the previous run before its later phases. Hence `set +e`.
+# Two questions left:
+#   1. Why does IconServices not answer? The likely cause is that the job has no
+#      Aqua (GUI) session, so gui/$UID XPC services have nowhere to reply from.
+#      `launchctl managername` prints Aqua in a GUI session. The arm64 runner is
+#      the control: if it says Aqua and the Intel one does not, that is the
+#      whole story, and an actions/runner-images bug worth filing.
+#   2. Do Intel Tahoe users actually need a `tahoe` bottle at all? Homebrew's
+#      macOS collector falls back to an older bottle of the same arch
+#      (find_older_compatible_tag), so the existing `sequoia` x86_64 bottle
+#      should already pour on Tahoe. This verifies that on real hardware.
 name: debug the Tahoe platypus build
 
 on:
@@ -31,148 +35,179 @@ permissions:
   contents: read
 
 jobs:
-  debug_ibtoold:
-    runs-on: macos-26-intel
-    timeout-minutes: 45
+  # Question 1. arm64 is the control -- it is known to compile these XIBs fine.
+  probe_iconservices:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-26-intel # the broken one
+          - macos-26 # arm64 control, known good
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     permissions:
       contents: read
     steps:
-      - name: Check out the Platypus sources
-        run: git clone --quiet --depth 1 --branch v5.5.0 https://github.com/sveinbjornt/Platypus.git platypus-src
+      - run: git clone --quiet --depth 1 --branch v5.5.0 https://github.com/sveinbjornt/Platypus.git platypus-src
 
-      - name: Probe ibtool / ibtoold
+      - name: launchd session and IconServices state
         run: |
           set +e
           set -uo pipefail
 
-          src="${PWD}/platypus-src"
-          out="${PWD}/nib-out"
-          samples="${PWD}/samples"
-          mkdir -p "${out}" "${samples}"
+          echo "== who / session =="
+          echo "user=$(whoami) uid=$(id -u)"
+          echo "launchctl managername: $(launchctl managername 2>&1)"
+
+          echo
+          echo "== iconservices in the user domain =="
+          launchctl list 2>/dev/null | grep -i icon || echo "  (none)"
+          echo "== iconservices in the system domain =="
+          sudo launchctl list 2>/dev/null | grep -i icon || echo "  (none)"
+
+          echo
+          echo "== running iconservices processes =="
+          pgrep -l 'conservices' || echo "  (none running)"
+
+          echo
+          echo "== gui domain services matching icon =="
+          launchctl print "gui/$(id -u)" 2>/dev/null | grep -i icon | head -n 20 \
+            || echo "  (no gui/$(id -u) domain, or no matching services)"
+
+          echo
+          echo "== service definitions on disk =="
+          find /System/Library/LaunchAgents /System/Library/LaunchDaemons \
+               -maxdepth 1 -iname '*icon*' 2>/dev/null || echo "  (none found)"
+
+      # Repeat the SAME file several times. If IconServices is merely flaky we
+      # expect a mix of passes and hangs; if it is dead we expect all hangs.
+      # This also gives a rough failure rate rather than a single anecdote.
+      - name: Baseline -- compile MainMenu.xib five times
+        run: |
+          set +e
+          set -uo pipefail
+
           ibtool_path="$(xcrun --find ibtool)"
+          xib="${PWD}/platypus-src/ScriptExec/Resources/MainMenu.xib"
+          mkdir -p out
 
-          # Print the interesting part of a sample rather than the whole dump.
-          show_call_graph() {
-            sed -n '/^Call graph:/,/^Total number/p' "$1" 2>/dev/null \
-              | head -n 45 | sed 's/^/    /'
-          }
-
-          # Run one ibtool invocation with a time budget. If it outlives the
-          # budget, sample BOTH the ibtool shim and the ibtoold daemon, then
-          # kill everything so the next case starts clean.
-          try_ibtool() {
-            label="$1"; budget="$2"; shift 2
-
-            echo "=================================================================="
-            echo "[${label}] ibtool $*"
-
-            "${ibtool_path}" "$@" &
-            ib_pid=$!
-
+          hangs=0
+          passes=0
+          for i in 1 2 3 4 5; do
+            "${ibtool_path}" --errors --warnings --notices --module ScriptExec \
+              --output-format human-readable-text \
+              --compile "out/baseline-${i}.nib" "${xib}" >/dev/null 2>&1 &
+            pid=$!
             waited=0
-            while kill -0 "${ib_pid}" 2>/dev/null && [ "${waited}" -lt "${budget}" ]; do
+            while kill -0 "${pid}" 2>/dev/null && [ "${waited}" -lt 60 ]; do
               sleep 3
               waited=$((waited + 3))
             done
-
-            if kill -0 "${ib_pid}" 2>/dev/null; then
-              echo "[${label}] RESULT: HUNG after ${budget}s"
-
-              ibtoold_pid="$(pgrep -n -f 'ibtoold' 2>/dev/null)"
-              echo "[${label}] ibtool pid=${ib_pid}  ibtoold pid=${ibtoold_pid:-<none>}"
-
-              if [ -n "${ibtoold_pid}" ]; then
-                echo "[${label}] ===== ibtoold stack (the daemon doing the work) ====="
-                sample "${ibtoold_pid}" 5 -file "${samples}/${label}-ibtoold.txt" >/dev/null 2>&1 \
-                  || echo "    (sample of ibtoold failed)"
-                show_call_graph "${samples}/${label}-ibtoold.txt"
-              fi
-
-              echo "[${label}] ===== ibtool stack (the shim) ====="
-              sample "${ib_pid}" 3 -file "${samples}/${label}-ibtool.txt" >/dev/null 2>&1 || true
-              show_call_graph "${samples}/${label}-ibtool.txt"
-
-              kill -9 "${ib_pid}" 2>/dev/null
-              wait "${ib_pid}" 2>/dev/null
+            if kill -0 "${pid}" 2>/dev/null; then
+              echo "  attempt ${i}: HUNG"
+              hangs=$((hangs + 1))
+              kill -9 "${pid}" 2>/dev/null
+              wait "${pid}" 2>/dev/null
             else
-              wait "${ib_pid}"
-              echo "[${label}] RESULT: completed rc=$? after ~${waited}s"
+              wait "${pid}"
+              echo "  attempt ${i}: ok after ~${waited}s"
+              passes=$((passes + 1))
             fi
-
-            # Never let a wedged daemon leak into the next case.
             pkill -9 -f ibtoold 2>/dev/null
             sleep 2
-          }
-
-          xib_shell="${src}/Application/Resources/ShellCommandWindow.xib"
-          xib_syntax="${src}/Application/Resources/SyntaxChecker.xib"
-          xib_editor="${src}/Application/Resources/Editor.xib"
-          xib_main="${src}/ScriptExec/Resources/MainMenu.xib"
-          xib_platypus="${src}/Application/Resources/Platypus.xib"
-
-          echo "##### A: the failing case, exactly as the build invokes it #####"
-          try_ibtool "A-shell-withfonts" 90 \
-            --errors --warnings --notices --module Platypus \
-            --auto-activate-custom-fonts \
-            --target-device mac --minimum-deployment-target 11.5 \
-            --output-format human-readable-text \
-            --compile "${out}/A.nib" "${xib_shell}"
-
-          echo
-          echo "##### B: same file, WITHOUT --auto-activate-custom-fonts #####"
-          try_ibtool "B-shell-nofonts" 90 \
-            --errors --warnings --notices --module Platypus \
-            --target-device mac --minimum-deployment-target 11.5 \
-            --output-format human-readable-text \
-            --compile "${out}/B.nib" "${xib_shell}"
-
-          echo
-          echo "##### C: bare minimum arguments on the same file #####"
-          try_ibtool "C-shell-bare" 90 --compile "${out}/C.nib" "${xib_shell}"
-
-          echo
-          echo "##### D: control -- a file known to compile, same flags as A #####"
-          try_ibtool "D-syntaxchecker" 90 \
-            --errors --warnings --notices --module Platypus \
-            --auto-activate-custom-fonts \
-            --target-device mac --minimum-deployment-target 11.5 \
-            --output-format human-readable-text \
-            --compile "${out}/D.nib" "${xib_syntax}"
-
-          echo
-          echo "##### E/F: the two XIBs never yet tested on this platform #####"
-          try_ibtool "E-editor" 90 \
-            --errors --warnings --notices --module Platypus \
-            --auto-activate-custom-fonts \
-            --target-device mac --minimum-deployment-target 11.5 \
-            --output-format human-readable-text \
-            --compile "${out}/E.nib" "${xib_editor}"
-
-          try_ibtool "F-platypus" 120 \
-            --errors --warnings --notices --module Platypus \
-            --auto-activate-custom-fonts \
-            --target-device mac --minimum-deployment-target 11.5 \
-            --output-format human-readable-text \
-            --compile "${out}/F.nib" "${xib_platypus}"
-
-          echo
-          echo "##### G: control -- ScriptExec's MainMenu.xib, the one we ship #####"
-          try_ibtool "G-mainmenu" 90 \
-            --errors --warnings --notices --module ScriptExec --flatten NO \
-            --auto-activate-custom-fonts \
-            --target-device mac --minimum-deployment-target 10.13 \
-            --output-format human-readable-text \
-            --compile "${out}/G.nib" "${xib_main}"
-
-          echo
-          echo "##### SUMMARY: which nibs were produced #####"
-          ls -la "${out}" 2>/dev/null
+          done
+          echo "BASELINE ${{ matrix.os }}: ${passes} passed, ${hangs} hung out of 5"
           exit 0
 
-      - name: Upload stack samples
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - name: Kickstart IconServices, then retry five times
+        run: |
+          set +e
+          set -uo pipefail
+
+          echo "== attempting to (re)start IconServices =="
+          sudo launchctl kickstart -k system/com.apple.iconservicesd 2>&1 \
+            | sed 's/^/  system: /'
+          launchctl kickstart -k "gui/$(id -u)/com.apple.iconservicesagent" 2>&1 \
+            | sed 's/^/  agent:  /'
+          sleep 5
+          echo "== processes after kickstart =="
+          pgrep -l 'conservices' || echo "  (still none)"
+
+          ibtool_path="$(xcrun --find ibtool)"
+          xib="${PWD}/platypus-src/ScriptExec/Resources/MainMenu.xib"
+
+          hangs=0
+          passes=0
+          for i in 1 2 3 4 5; do
+            "${ibtool_path}" --errors --warnings --notices --module ScriptExec \
+              --output-format human-readable-text \
+              --compile "out/after-${i}.nib" "${xib}" >/dev/null 2>&1 &
+            pid=$!
+            waited=0
+            while kill -0 "${pid}" 2>/dev/null && [ "${waited}" -lt 60 ]; do
+              sleep 3
+              waited=$((waited + 3))
+            done
+            if kill -0 "${pid}" 2>/dev/null; then
+              echo "  attempt ${i}: HUNG"
+              hangs=$((hangs + 1))
+              kill -9 "${pid}" 2>/dev/null
+              wait "${pid}" 2>/dev/null
+            else
+              wait "${pid}"
+              echo "  attempt ${i}: ok after ~${waited}s"
+              passes=$((passes + 1))
+            fi
+            pkill -9 -f ibtoold 2>/dev/null
+            sleep 2
+          done
+          echo "AFTER KICKSTART ${{ matrix.os }}: ${passes} passed, ${hangs} hung out of 5"
+          exit 0
+
+  # Question 2: does the existing sequoia x86_64 bottle pour on Intel Tahoe?
+  # This branch is based on main, where platypus is revision 6 and ships
+  # `sha256 sequoia:` with no `tahoe` tag -- exactly the situation to test.
+  sequoia_bottle_on_tahoe:
+    runs-on: macos-26-intel
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Set up Homebrew
+        uses: Homebrew/actions/setup-homebrew@8f3d1ec8a696b3b9d9a6c3696b6c73033cab69e4 # 2026.08.14.1
         with:
-          name: ibtoold-samples
-          path: samples/
-          if-no-files-found: warn
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - run: brew trust dilumaluthge-packaging/tap
+
+      - name: What tag does Homebrew compute here, and what does the formula offer?
+        run: |
+          set -uo pipefail
+          echo "macOS: $(sw_vers -productVersion)  arch: $(uname -m)"
+          echo "== bottle tags declared by the formula =="
+          grep -E 'root_url|sha256' "$(brew --repository dilumaluthge-packaging/tap)/Formula/platypus.rb"
+
+      # The decisive step. If the fallback works this pours in seconds. If it
+      # does not, brew builds from source -- which on this runner means the
+      # ibtool deadlock, so a hang here is itself a clear answer.
+      - name: Install platypus and require that it POURED a bottle
+        run: |
+          set -uo pipefail
+          brew install --verbose --formula dilumaluthge-packaging/tap/platypus 2>&1 | tee install.log
+          echo "=================================================="
+          if grep -qE '^==> Pouring ' install.log; then
+            echo "POURED:"
+            grep -E '^==> Pouring ' install.log
+          else
+            echo "::error::No bottle was poured -- Homebrew did not fall back to the sequoia bottle"
+            grep -iE 'building|from source|installing.*from' install.log | head -n 10
+            exit 1
+          fi
+
+      - name: Verify the installed binary actually runs
+        run: |
+          set -uo pipefail
+          which platypus
+          file "$(which platypus)"
+          lipo -archs "$(which platypus)" || true
+          platypus --version
