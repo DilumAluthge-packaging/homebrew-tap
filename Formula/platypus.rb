@@ -17,7 +17,7 @@ class Platypus < Formula
   # version is automatically extracted from the url
   sha256 "4a12806aef43d13f67a6d55c765da6209b42543b421fadacaf3a2462c3e6221c"
   license "BSD-3-Clause"
-  revision 5
+  revision 6
 
   bottle do
     root_url "https://github.com/DilumAluthge-packaging/homebrew-tap/releases/download/platypus-5.5.0_5"
