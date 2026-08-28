@@ -27,7 +27,8 @@ class Platypus < Formula
     sha256 sequoia:       "520dd3f85c494918bbfb6c7b2b2ecbd4def14d813fc24043f4db443df25b5d41"
   end
 
-  depends_on "make" => :build
+  # make comes automatically when you install the Xcode CLT
+
   depends_on xcode: ["8.0", :build]
   depends_on :macos
 
