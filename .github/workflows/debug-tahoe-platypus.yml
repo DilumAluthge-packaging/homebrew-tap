@@ -1,0 +1,65 @@
+# THROWAWAY. Delete this file and the dpa/debug-tahoe-platypus branch once the
+# Tahoe build is understood. See DilumAluthge-packaging/homebrew-tap#140.
+#
+# `platypus` builds and bottles on macos-15-intel in about 6 minutes. On
+# macos-26-intel it has never finished. We cannot tell whether it is slow or
+# wedged, because `brew test-bot` captures the output of the commands it shells
+# out to and only surfaces it on failure -- so `brew install --build-bottle`
+# prints nothing for its entire duration.
+#
+# This workflow drops test-bot entirely and runs `brew install --verbose`
+# directly, so the build streams to the step log as it happens. It runs on one
+# Intel runner and opens no pull request, so it does not start the tests.yml
+# matrix.
+name: debug the Tahoe platypus build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - dpa/debug-tahoe-platypus
+
+permissions:
+  contents: read
+
+jobs:
+  debug_tahoe:
+    runs-on: macos-26-intel
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - name: Set up Homebrew
+        uses: Homebrew/actions/setup-homebrew@8f3d1ec8a696b3b9d9a6c3696b6c73033cab69e4 # 2026.08.14.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - run: brew trust dilumaluthge-packaging/tap
+
+      # The homebrew-logs artifacts from #140 contained only leftovers from the
+      # runner image, on the Sequoia runner too -- and that one builds platypus
+      # successfully. So ~/Library/Logs/Homebrew is not where these builds are
+      # logged. Find out where it actually is.
+      - name: Where does Homebrew write its logs?
+        run: |
+          set -uo pipefail
+          echo "HOMEBREW_LOGS=${HOMEBREW_LOGS:-<unset>}"
+          echo "== HOMEBREW_* environment =="
+          env | grep '^HOMEBREW' | sort || echo "(none)"
+          echo "== brew config =="
+          brew config
+          echo "== existing log tree =="
+          find "${HOME}/Library/Logs" -maxdepth 3 2>/dev/null | head -n 30 || true
+
+      # --verbose streams the build to this step's log, so a stall is visible as
+      # a gap between consecutive compiler lines rather than as total silence.
+      - name: Build platypus from source, streaming the output
+        run: brew install --verbose --formula --build-bottle dilumaluthge-packaging/tap/platypus
+
+      - name: Where did the logs land?
+        if: always()
+        run: |
+          set -uo pipefail
+          find "${HOME}/Library/Logs" -maxdepth 3 2>/dev/null | head -n 40 || true
+          echo "== any directory named platypus that looks like a log dir =="
+          find "${HOME}" -maxdepth 6 -type d -name platypus -path '*og*' 2>/dev/null | head -n 10 || true
