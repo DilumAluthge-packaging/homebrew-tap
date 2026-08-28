@@ -26,7 +26,6 @@ class Platypus < Formula
     sha256 arm64_sonoma:  "5f0ec6db4cb8183a65a7f39c48e4e20da7054a0bce3c312efb954f055059473e"
   end
 
-  depends_on "base64" => :build
   depends_on "make" => :build
   depends_on xcode: ["8.0", :build]
   depends_on :macos
