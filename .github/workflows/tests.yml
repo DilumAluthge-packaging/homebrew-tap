@@ -128,3 +128,130 @@ jobs:
           name: bottles_${{ matrix.os }}
           path: '*.bottle.*'
           if-no-files-found: warn # don't error if there are no bottles
+
+### ---------------------------------------------------------------------------
+### Everything below this point is for the purpose of building the `platypus`
+### formula on Intel macOS.
+### ---------------------------------------------------------------------------
+
+  # We only ship Intel bottles for platypus, so we deliberately do NOT add
+  # macos-15-intel to the matrix above (which would build every changed formula).
+  # Instead, this job pair hardcodes platypus:
+  #   1. platypus_detect works out whether this PR touches platypus at all.
+  #   2. platypus_intel_build_macos_15_intel builds it, and is skipped entirely
+  #      when it doesn't.
+  #
+  # Splitting detection into its own (cheap, Linux) job means an Intel macOS
+  # runner is never even started for PRs that leave platypus alone.
+  platypus_detect:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04 # This is just a detection job, so we can run it on Linux
+    permissions:
+      contents: read
+    outputs:
+      test_platypus: ${{ steps.check.outputs.result }}
+    steps:
+      - name: Set up Homebrew
+        uses: Homebrew/actions/setup-homebrew@8f3d1ec8a696b3b9d9a6c3696b6c73033cab69e4 # 2026.08.14.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Formula detection resolves each changed file to a formula name, which
+      # loads (and therefore executes) the tap's Ruby. That requires trust.
+      - run: brew trust dilumaluthge-packaging/tap
+
+      # Writes a comma-separated, fully-qualified `testing_formulae` step output.
+      # This flag can't be combined with --testing-formulae, hence the separate job.
+      - name: Detect which formulas this PR changes
+        id: formulae-detect
+        run: brew test-bot --only-formulae-detect
+
+      - name: Decide whether platypus needs an Intel build
+        id: check
+        env:
+          TESTING_FORMULAE: ${{ steps.formulae-detect.outputs.testing_formulae }}
+          PLATYPUS: dilumaluthge-packaging/tap/platypus
+        run: |
+          set -euo pipefail
+
+          # Split on commas and match whole lines, so that a formula whose name
+          # merely starts with "platypus" can never trigger an Intel build.
+          if tr ',' '\n' <<< "${TESTING_FORMULAE}" | grep -qxF "${PLATYPUS}"; then
+            echo 'result=true' >> "${GITHUB_OUTPUT}"
+            echo "::notice::${PLATYPUS} changed; it will be built on Intel macOS"
+          else
+            echo 'result=false' >> "${GITHUB_OUTPUT}"
+            echo "::notice::${PLATYPUS} unchanged; skipping the Intel macOS build"
+          fi
+
+  # Build, test and bottle platypus on Intel macOS.
+  #
+  # This job is skipped outright unless platypus_detect saw platypus change,
+  # so PRs that touch other formulas never start an Intel macOS runner.
+  platypus_intel_build_macos_15_intel:
+    needs: platypus_detect
+    if: needs.platypus_detect.outputs.test_platypus == 'true'
+    runs-on: macos-15-intel # Intel macOS
+    permissions:
+      contents: read
+    steps:
+      - name: Set up Homebrew
+        id: set-up-homebrew
+        uses: Homebrew/actions/setup-homebrew@8f3d1ec8a696b3b9d9a6c3696b6c73033cab69e4 # 2026.08.14.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cache Homebrew Bundler RubyGems
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.set-up-homebrew.outputs.gems-path }}
+          key: macos-15-intel-rubygems-${{ steps.set-up-homebrew.outputs.gems-hash }}
+          restore-keys: macos-15-intel-rubygems-
+
+      # Trust my tap
+      - run: brew trust dilumaluthge-packaging/tap
+
+      - run: brew test-bot --only-cleanup-before
+
+      - run: brew test-bot --only-setup
+
+      # We skip --only-tap-syntax here: it lints the whole tap and gives an
+      # identical result on every runner, so the matrix job above already covers it.
+
+      # --testing-formulae replaces test-bot's own formula detection, so this
+      # runner builds platypus and nothing else, no matter what else the PR touched.
+      - run: brew test-bot --only-formulae --testing-formulae=dilumaluthge-packaging/tap/platypus
+
+      - name: List bottles (if any)
+        run: ls -- *.bottle.*
+        continue-on-error: true # don't error if there are no bottles
+
+      - name: Cat the .txt files for any skipped or failed formulas
+        run: tail -n +1 skipped_or_failed_formulae-*.txt
+        continue-on-error: true # don't error if there are no matching files
+
+      # Unlike the matrix job, there are no expected skips here: this job only
+      # ever tests platypus, and platypus is supposed to build on Intel macOS.
+      - name: Fail if brew test-bot skipped or failed platypus
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          files=(skipped_or_failed_formulae-*.txt)
+          if [[ ${#files[@]} -eq 0 ]]; then
+            exit 0
+          fi
+
+          if [[ -s "${files[0]}" ]]; then
+            awk 'NF { print "::error::brew test-bot skipped or failed formula: " $1 }' "${files[@]}"
+            exit 1
+          fi
+
+      - name: Upload bottles as artifact
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: bottles_macos-15-intel
+          path: '*.bottle.*'
+          if-no-files-found: warn # don't error if there are no bottles
