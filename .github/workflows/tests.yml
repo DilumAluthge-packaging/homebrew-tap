@@ -18,6 +18,7 @@ jobs:
           - macos-15       # Apple Silicon
           - macos-26       # Apple Silicon
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     permissions:
       actions: read
       checks: read
