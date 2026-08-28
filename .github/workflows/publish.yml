@@ -9,6 +9,7 @@ jobs:
   pr-pull:
     if: contains(github.event.pull_request.labels.*.name, 'automerge')
     runs-on: ubuntu-24.04
+    timeout-minutes: 60
     permissions:
       actions: read
       checks: read
