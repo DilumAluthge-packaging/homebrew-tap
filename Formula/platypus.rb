@@ -21,10 +21,11 @@ class Platypus < Formula
 
   bottle do
     root_url "https://github.com/DilumAluthge-packaging/homebrew-tap/releases/download/platypus-5.5.0_6"
-    sha256 arm64_tahoe:   "053439cb4125ad84d248bfaab5d18f14afbe65e81b18b28783a83ffad1707606"
-    sha256 arm64_sequoia: "f658f27dc776283042b88835f0e631a52e80f878371ed5b3a780514c483bf158"
-    sha256 arm64_sonoma:  "6bb5d07aaa8cba042340ed732be8ce2ab517813c56fd751b1cf927d617ad7388"
-    sha256 sequoia:       "520dd3f85c494918bbfb6c7b2b2ecbd4def14d813fc24043f4db443df25b5d41"
+    rebuild 1
+    sha256 arm64_tahoe:   "870043487cdeff2c310bb64ea9b716410d87c2c09aec616f7cbdc0084e90deed"
+    sha256 arm64_sequoia: "022eb2c5310a040c8e4ee07da35fd30c231e68d09dc6d5850f7934a2c29f6a50"
+    sha256 arm64_sonoma:  "a4cca3ef29e97d8f8f6af34867c39ff110cc2e401b9d41a1800313564edd67c5"
+    sha256 sequoia:       "f2fb66c79e9867119712fc1bbefcb1fed43ee8cb6f0132350042de77bbf2fcd0"
   end
 
   # make comes automatically when you install the Xcode CLT
