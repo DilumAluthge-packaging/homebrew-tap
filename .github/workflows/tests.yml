@@ -123,7 +123,7 @@ jobs:
         # We build on multiple Ubuntu versions, to make sure the build succeeds
         # But we only upload from the oldest Ubuntu version (currently `ubuntu-24.04`),
         # so that the bottles are built using the older glibc.
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: bottles_${{ matrix.os }}
           path: '*.bottle.*'
@@ -277,7 +277,7 @@ jobs:
 
       - name: Upload bottles as artifact
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: bottles_${{ matrix.os }}
           path: '*.bottle.*'
