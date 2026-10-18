@@ -81,21 +81,21 @@ class Platypus < Formula
     system bin/"platypus", "--version"
     system bin/"platypus", "--help"
 
-    # # Regression test for https://github.com/DilumAluthge-packaging/homebrew-tap/issues/18
-    # File.open("my_platypus_test_script.bash", "w") do |f|
-    #   f.write('#!/usr/bin/env bash\n')
-    #   f.write('\n')
-    #   f.write('echo "Hello, Platypus on macOS!"\n')
-    #   f.write('read -p "Press Enter to exit"\n')
-    # end
-    # ENV["TMPDIR"] = ENV["HOMEBREW_TEMP"] + "/"
-    # refute_path_exists "./MyPlatypusTestApp.app/Contents/Info.plist"
-    # system bin/"platypus",
-    #        "-a", "MyPlatypusTestApp",
-    #        "-o", "Text Window",
-    #        "./my_platypus_test_script.bash",
-    #        "./MyPlatypusTestApp.app"
-    # assert_path_exists "./MyPlatypusTestApp.app/Contents/Info.plist"
-    # ENV["TMPDIR"] = nil
+    # Regression test for https://github.com/DilumAluthge-packaging/homebrew-tap/issues/18
+    File.open("my_platypus_test_script.bash", "w") do |f|
+      f.write('#!/usr/bin/env bash\n')
+      f.write('\n')
+      f.write('echo "Hello, Platypus on macOS!"\n')
+      f.write('read -p "Press Enter to exit"\n')
+    end
+    ENV["TMPDIR"] = ENV["HOMEBREW_TEMP"] + "/"
+    refute_path_exists "./MyPlatypusTestApp.app/Contents/Info.plist"
+    system bin/"platypus",
+           "-a", "MyPlatypusTestApp",
+           "-o", "Text Window",
+           "./my_platypus_test_script.bash",
+           "./MyPlatypusTestApp.app"
+    assert_path_exists "./MyPlatypusTestApp.app/Contents/Info.plist"
+    ENV["TMPDIR"] = nil
   end
 end
