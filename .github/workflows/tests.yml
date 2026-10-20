@@ -145,7 +145,7 @@ jobs:
   # runner is never even started for PRs that leave platypus alone.
   platypus_detect:
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-24.04 # This is just a detection job, so we can run it on Linux
+    runs-on: ubuntu-26.04 # This is just a detection job, so we can run it on Linux
     timeout-minutes: 20
     permissions:
       contents: read
