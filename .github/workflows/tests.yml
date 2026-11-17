@@ -16,6 +16,7 @@ jobs:
           - ubuntu-26.04
           - macos-15       # Apple Silicon
           - macos-26       # Apple Silicon
+          - xcode-27       # Apple Silicon
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     permissions:
