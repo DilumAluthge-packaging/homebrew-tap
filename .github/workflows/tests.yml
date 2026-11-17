@@ -14,7 +14,6 @@ jobs:
         os:
           - ubuntu-24.04
           - ubuntu-26.04
-          - macos-14       # Apple Silicon
           - macos-15       # Apple Silicon
           - macos-26       # Apple Silicon
     runs-on: ${{ matrix.os }}
